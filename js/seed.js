@@ -3,7 +3,8 @@
    רשימת החיילים וההגדרות לא נוגעים. */
 (function (root) {
   'use strict';
-  const MOVES_VERSION = 2; // שבוע 1.11.2026 – 7.11.2026
+  const MOVES_VERSION = 2;
+  const MOVES_LABEL = 'שבוע 1.11–7.11';
 
   const NAMES = [
     'אריאל בנבניסטי', 'נדב איפרגן', 'שמואל שיטובי', 'לאון גרדשוב', 'יניב כיבש', 'עזרא גרשון', 'גארי וולדרסקי',
@@ -44,6 +45,6 @@
     };
   }
 
-  root.Seed = { create, moves, MOVES_VERSION };
+  root.Seed = { create, moves, MOVES_VERSION, MOVES_LABEL };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.Seed;
 })(typeof self !== 'undefined' ? self : globalThis);

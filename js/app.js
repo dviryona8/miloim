@@ -3,6 +3,7 @@
   'use strict';
   const L = window.Logic;
   const KEY = 'miluim-team-v1';
+  const APP_VERSION = '3';
   const $ = (s, el = document) => el.querySelector(s);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const pad = (n) => String(n).padStart(2, '0');
@@ -235,7 +236,7 @@
         <p class="muted" style="font-size:13px;margin:4px 0 0">מוחק את כל התנועות, ההיעדרויות והבקשות. החיילים וההגדרות נשארים.</p>
         <button class="btn block" data-act="reset-seed">🔁 טעינת נתוני הפתיחה מחדש</button>
         <button class="btn danger block" data-act="clear-all">🗑️ מחיקת כל הנתונים</button></div></section>
-      <p class="foot">הצוות שלי · עובד גם בלי אינטרנט 📶✖️</p>`;
+      <p class="foot">הצוות שלי · גרסה ${APP_VERSION} · תנועות: ${Seed.MOVES_LABEL}<br>עובד גם בלי אינטרנט 📶✖️</p>`;
   }
 
   // ===== רינדור =====
