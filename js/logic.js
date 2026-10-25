@@ -16,6 +16,7 @@
     vacation: { label: 'חופשה', emoji: '🏖️' },
     sick: { label: 'מחלה', emoji: '🤒' },
     personal: { label: 'אירוע אישי', emoji: '🎉' },
+    notjoined: { label: 'טרם הצטרף', emoji: '🕓' },
     other: { label: 'אחר', emoji: '📝' },
   };
 
@@ -79,7 +80,7 @@
     return { open: true, absence: a };
   }
   const returnText = (ri) =>
-    !ri ? '' : ri.open ? 'לא חוזר / פתוח' : `${ri.absence.type === 'late' ? 'מגיע' : 'חוזר'}: ${fmtPoint(ri.point)}`;
+    !ri ? '' : ri.open ? (ri.absence.type === 'notjoined' ? 'תאריך הצטרפות לא ידוע' : 'לא חוזר / פתוח') : `${ri.absence.type === 'late' ? 'מגיע' : 'חוזר'}: ${fmtPoint(ri.point)}`;
 
   // ירוק = מלא, אדום = מתחת לסף, צהוב = חוסר
   function level(count, total, min) {
@@ -90,7 +91,7 @@
 
   function reasonText(a) {
     const t = TYPES[a.type] || TYPES.other;
-    return `${t.emoji} ${t.label}${a.note ? ` (${a.note})` : ''}`;
+    return `${t.emoji} ${t.label}${a.note ? ` (${a.note})` : ''}${a.tentative ? ' ❓ לא סופי' : ''}`;
   }
 
   function dayStatus(state, iso) {

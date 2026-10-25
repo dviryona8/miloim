@@ -1,13 +1,13 @@
 /* Service Worker: שומר את האפליקציה במטמון כדי שתעבוד בלי אינטרנט.
    אחרי שינוי בקבצים יש להעלות את מספר הגרסה. */
-const CACHE = 'miluim-v1';
+const CACHE = 'miluim-v2';
 const ASSETS = [
   './', 'index.html', 'css/style.css', 'js/logic.js', 'js/seed.js', 'js/app.js', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {

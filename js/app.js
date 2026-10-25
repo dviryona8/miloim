@@ -23,8 +23,16 @@
     } catch (e) { /* נתונים פגומים: נטען נתוני פתיחה */ }
     return null;
   }
+  // גרסת תנועות: אם בקוד יש תנועות חדשות יותר ממה שבטלפון, מחליפים רק את התנועות
+  let migrated = false;
   let state = load();
   if (!state) { state = normalize(Seed.create()); save(); }
+  else if ((state.movesVersion || 1) < Seed.MOVES_VERSION) {
+    state.absences = Seed.moves(state.soldiers);
+    state.movesVersion = Seed.MOVES_VERSION;
+    migrated = true;
+    save();
+  }
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { toast('⚠️ השמירה נכשלה'); }
   }
@@ -96,7 +104,7 @@
 
     const missingRow = (r, slot, desc) => {
       const ri = L.returnInfo(state, r.soldier.id, slot);
-      return `<button class="row" data-act="soldier" data-id="${r.soldier.id}">${avatar(r.soldier)}
+      return `<button class="row ${r.reasons.some((a) => a.tentative) ? 'tent' : ''}" data-act="soldier" data-id="${r.soldier.id}">${avatar(r.soldier)}
         <span class="body"><span class="name">${esc(r.soldier.name)}</span>
           <span class="sub">${desc ? esc(desc) + ' · ' : ''}${esc(r.reasons.map(L.reasonText).join(', '))}</span>
           ${ri ? `<span class="ret">🏠 ${esc(L.returnText(ri))}</span>` : ''}</span>${mini(r)}</button>`;
@@ -143,7 +151,8 @@
     h += days.map((d, i) => `<button class="wk-row ${lvl(d.min, d.total)} ${d.date === today ? 'is-today' : ''}" style="animation-delay:${i * 40}ms" data-act="open-day" data-date="${d.date}">
         <span class="wk-day"><b>${L.dayName(d.date)}</b><small class="muted">${L.fmtDate(d.date)}</small></span>
         <span class="wk-bars">${d.partCounts.map((c, p) => `<div class="${lvl(c, d.total)}"><i style="height:${d.total ? Math.max(4, Math.round((c / d.total) * 34)) : 4}px"></i><span>${L.PARTS[p].emoji}${c}</span></div>`).join('')}</span>
-        <span class="wk-count" dir="ltr"><b>${d.min}</b><small>/${d.total}</small></span></button>`).join('');
+        <span class="wk-count" dir="ltr"><b>${d.min}${d.rows.some((r) => r.reasons.some((a) => a.tentative)) ? '<sup title="יש תנועה לא סופית">❓</sup>' : ''}</b><small>/${d.total}</small></span></button>`).join('');
+    h += `<p class="muted" style="font-size:13px;text-align:center;margin-bottom:0">❓ = יש באותו יום תנועה לא סופית</p>`;
     h += `<p class="muted" style="font-size:13px;text-align:center">המספר הגדול = מינימום הנוכחים ביום · לחיצה על יום לפירוט</p>`;
     return h;
   }
@@ -153,9 +162,9 @@
     const s = soldier(a.soldierId);
     if (!s) return '';
     const st = a.status === 'pending' ? '<span class="badge lvl-warn">⏳ ממתין לאישור</span>' : a.status === 'rejected' ? '<span class="badge lvl-bad">✖ נדחה</span>' : '';
-    return `<div class="mv ${a.status}"><button class="mv-main" data-act="abs-edit" data-id="${a.id}">
-      <span class="mv-top"><b>${esc(s.name)}</b>${typeBadge(a)}${st}</span>
-      <span class="mv-range" style="display:block">🚪 ${esc(L.fmtPoint(a.start))}${L.hasDate(a.start) ? ` ⟵ 🏠 ${L.hasDate(a.end) ? esc(L.fmtPoint(a.end)) : 'לא חוזר / פתוח'}` : ''}</span>
+    return `<div class="mv ${a.status} ${a.tentative ? 'tent' : ''}"><button class="mv-main" data-act="abs-edit" data-id="${a.id}">
+      <span class="mv-top"><b>${esc(s.name)}</b>${typeBadge(a)}${a.tentative ? '<span class="badge tent-b">❓ לא סופי</span>' : ''}${st}</span>
+      <span class="mv-range" style="display:block">🚪 ${esc(L.fmtPoint(a.start))}${L.hasDate(a.start) ? ` ⟵ 🏠 ${L.hasDate(a.end) ? esc(L.fmtPoint(a.end)) : a.type === 'notjoined' ? 'תאריך לא ידוע' : 'לא חוזר / פתוח'}` : ''}</span>
       ${a.note ? `<span class="mv-note" style="display:block">${esc(a.note)}</span>` : ''}</button>
       ${a.status === 'pending' ? `<div class="mv-act"><button class="btn ok sm" data-act="abs-approve" data-id="${a.id}">✔ אישור</button><button class="btn danger fill sm" data-act="abs-reject" data-id="${a.id}">✖ דחייה</button></div>` : ''}</div>`;
   }
@@ -222,6 +231,8 @@
         ${installEvt ? '<button class="btn primary block" data-act="install">📲 התקנת האפליקציה</button>' : ''}
         <p style="margin:10px 0 0;font-size:14px"><b>אייפון (Safari):</b> כפתור השיתוף ⬆️ ואז "הוסף למסך הבית".<br><b>אנדרואיד (Chrome):</b> תפריט ⋮ ואז "התקנת אפליקציה" או "הוספה למסך הבית".</p></section>`}
       <section class="card"><h2>🧹 איפוס</h2><div class="stack">
+        <button class="btn block" data-act="reset-moves">🧽 איפוס תנועות</button>
+        <p class="muted" style="font-size:13px;margin:4px 0 0">מוחק את כל התנועות, ההיעדרויות והבקשות. החיילים וההגדרות נשארים.</p>
         <button class="btn block" data-act="reset-seed">🔁 טעינת נתוני הפתיחה מחדש</button>
         <button class="btn danger block" data-act="clear-all">🗑️ מחיקת כל הנתונים</button></div></section>
       <p class="foot">הצוות שלי · עובד גם בלי אינטרנט 📶✖️</p>`;
@@ -341,7 +352,7 @@
       else if (k === 'full') { closeSheet(true); openAbsenceForm({ soldierId: q.soldierId, start: { date: base, part: 0 } }); }
       else if (k === 'end') {
         const end = q.endOpts[+b.dataset.i][1];
-        const a = { id: uid(), soldierId: q.soldierId, type: 'exit', status: 'approved', start: q.start, end, note: '' };
+        const a = { id: uid(), soldierId: q.soldierId, type: 'exit', status: 'approved', start: q.start, end, note: '', tentative: false };
         if (end && L.slotOf(end) <= L.slotOf(a.start)) return toast('⚠️ החזרה חייבת להיות אחרי היציאה');
         state.absences.push(a);
         closeSheet();
@@ -362,10 +373,10 @@
     const f = existing
       ? { soldierId: existing.soldierId, type: existing.type, status: existing.status, note: existing.note || '',
           start: clonePt(existing.start) || { date: ui.date, part: 0, time: '' }, end: clonePt(existing.end) || { date: L.addDays(ui.date, 1), part: 0, time: '' },
-          noDate: !L.hasDate(existing.start), open: !L.hasDate(existing.end) }
+          noDate: !L.hasDate(existing.start), open: !L.hasDate(existing.end), tentative: !!existing.tentative }
       : { soldierId: soldierId || actives[0].id, type: 'exit', status: 'approved', note: '',
           start: clonePt(start) || { date: ui.date, part: 0, time: '' }, end: { date: L.addDays((start && start.date) || ui.date, 1), part: 0, time: '' },
-          noDate: false, open: false };
+          noDate: false, open: false, tentative: false };
     if (status) { f.status = status; f.noDate = false; }
     f.startMode = f.start.time ? 'time' : 'part';
     f.endMode = f.end.time ? 'time' : 'part';
@@ -396,6 +407,7 @@
         ${f.noDate && f.status === 'pending' ? '' : `<div class="fieldset"><label class="fl">🏠 חזרה / הגעה לבסיס</label>
           <label class="check"><span class="switch"><input type="checkbox" data-s="open" ${f.open ? 'checked' : ''}><span></span></span>לא חוזר / פתוח</label>
           ${f.open ? '' : ptEditor('end')}</div>`}
+        <label class="check"><span class="switch"><input type="checkbox" data-s="tentative" ${f.tentative ? 'checked' : ''}><span></span></span>❓ לא סופי (עדיין לא סגור)</label>
         <label class="fl">📝 הערה</label><textarea data-f="note" placeholder="למשל: חתונה של אח">${esc(f.note)}</textarea>
         <div class="btns"><button class="btn primary" data-s="save">💾 שמירה</button>${existing ? '<button class="btn danger" data-s="delete">🗑️ מחיקה</button>' : ''}</div>`);
     }
@@ -415,6 +427,7 @@
       else if (s === 'part') f[b.dataset.k].part = +b.dataset.v;
       else if (s === 'nodate') f.noDate = b.checked;
       else if (s === 'open') f.open = b.checked;
+      else if (s === 'tentative') f.tentative = b.checked;
       else if (s === 'save') return doSave();
       else if (s === 'delete') {
         if (!confirm('למחוק את ההיעדרות?')) return;
@@ -431,7 +444,7 @@
     }
     function doSave() {
       const noDate = f.noDate && f.status === 'pending';
-      const a = { id: existing ? existing.id : uid(), soldierId: f.soldierId, type: f.type, status: f.status, note: f.note.trim(), start: null, end: null };
+      const a = { id: existing ? existing.id : uid(), soldierId: f.soldierId, type: f.type, status: f.status, note: f.note.trim(), tentative: f.tentative, start: null, end: null };
       if (!noDate) {
         if (!f.start.date) return toast('⚠️ חסר תאריך יציאה');
         a.start = pt('start');
@@ -531,6 +544,7 @@
       if (!d || !Array.isArray(d.soldiers) || !Array.isArray(d.absences)) throw new Error('bad');
       if (!confirm(`לייבא ${d.soldiers.length} חיילים ו-${d.absences.length} היעדרויות?\nהנתונים הנוכחיים יוחלפו.`)) return;
       state = normalize(d);
+      state.movesVersion = Seed.MOVES_VERSION;
       applyTheme();
       commit('✅ הנתונים יובאו');
     } catch { toast('⚠️ הקובץ לא תקין'); }
@@ -559,8 +573,17 @@
     export: () => exportData(),
     import: () => $('#import-file').click(),
     install: async () => { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice; installEvt = null; render(false); },
+    'reset-moves': () => {
+      const n = state.absences.length;
+      if (!n) return toast('אין תנועות למחוק');
+      if (!confirm(`למחוק את כל ${n} התנועות, ההיעדרויות והבקשות?
+רשימת החיילים וההגדרות יישארו.`)) return;
+      const backup = state.absences;
+      state.absences = [];
+      commit('🧽 התנועות אופסו', () => { state.absences = backup; commit('↩ שוחזר'); });
+    },
     'reset-seed': () => { if (confirm('לטעון מחדש את נתוני הפתיחה? כל השינויים שלך יימחקו.')) { state = normalize(Seed.create()); applyTheme(); commit('🔁 נתוני הפתיחה נטענו'); } },
-    'clear-all': () => { if (confirm('למחוק את כל החיילים וההיעדרויות? אי אפשר לבטל.')) { state = normalize({ settings: state.settings }); commit('🗑️ הכל נמחק'); } },
+    'clear-all': () => { if (confirm('למחוק את כל החיילים וההיעדרויות? אי אפשר לבטל.')) { state = normalize({ settings: state.settings, movesVersion: Seed.MOVES_VERSION }); commit('🗑️ הכל נמחק'); } },
   };
   function setStatus(id, status, msg) {
     const a = state.absences.find((x) => x.id === id);
@@ -609,8 +632,15 @@
 
   applyTheme();
   render();
+  if (migrated) setTimeout(() => toast('🔄 התנועות עודכנו לשבוע 1.11'), 400);
 
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    // כשגרסה חדשה של האפליקציה נכנסת לתוקף, טוענים מחדש פעם אחת כדי להציג אותה
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (hadController && !reloaded && !document.querySelector('.sheet')) { reloaded = true; location.reload(); }
+    });
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').then((r) => r.update()).catch(() => {}));
   }
 })();

@@ -1,59 +1,49 @@
-/* נתוני פתיחה: שבוע ראשון 18.10.2026 – שבת 24.10.2026
-   חלקי יום: 0 בוקר, 1 צהריים, 2 ערב, 3 לילה */
+/* נתוני פתיחה. חלקי יום: 0 בוקר, 1 צהריים, 2 ערב, 3 לילה
+   MOVES_VERSION: כשמעלים את המספר, האפליקציה בטלפון מוחקת את התנועות השמורות וטוענת את moves() במקומן.
+   רשימת החיילים וההגדרות לא נוגעים. */
 (function (root) {
   'use strict';
+  const MOVES_VERSION = 2; // שבוע 1.11.2026 – 7.11.2026
+
   const NAMES = [
     'אריאל בנבניסטי', 'נדב איפרגן', 'שמואל שיטובי', 'לאון גרדשוב', 'יניב כיבש', 'עזרא גרשון', 'גארי וולדרסקי',
     'סרגיי מישצינקו', 'בניאל אליאגוב', 'ניר לארי', 'אורי זלצברג', 'נריה הראל', 'דביר יונה', 'תומר זיו',
   ];
 
+  // תנועות השבוע. מותאמות לחיילים לפי שם, כדי שיעבדו גם על רשימת החיילים שכבר בטלפון.
+  function moves(soldiers) {
+    const id = (name) => (soldiers.find((s) => s.name.trim() === name) || soldiers.find((s) => s.name.includes(name.split(' ')[0])) || {}).id;
+    const P = (day, part) => ({ date: '2026-11-0' + day, part }); // day = 1..7 (ראשון..שבת)
+    let n = 0;
+    const A = (who, type, start, end, note, extra) => ({
+      id: 'm2-' + ++n, soldierId: id(who), type, status: 'approved', start, end, note: note || '', tentative: false, ...extra,
+    });
+    const T = { tentative: true };
+
+    return [
+      A('שמואל שיטובי', 'notjoined', P(1, 0), null, 'תאריך לא ידוע'),
+      A('לאון גרדשוב', 'exit', P(5, 2), null, 'חמישי בערב או שישי בבוקר', T),
+      A('עזרא גרשון', 'late', P(1, 0), P(1, 2), 'מגיע ראשון בצהריים או בערב', T),
+      A('עזרא גרשון', 'exit', P(4, 0), P(4, 2), 'יוצא רביעי בבוקר, חוזר רביעי בערב'),
+      A('בניאל אליאגוב', 'exit', P(4, 1), P(5, 1), 'יוצא רביעי בצהריים, חוזר חמישי בצהריים'),
+      A('ניר לארי', 'late', P(1, 0), P(1, 1), 'אולי מגיע מאוחר ביום ראשון', T),
+      A('נריה הראל', 'late', P(1, 0), P(4, 2), 'מגיע רביעי בערב'),
+      A('תומר זיו', 'exit', P(7, 3), null, 'יוצא שבת בלילה'),
+      A('אורי זלצברג', 'exit', P(2, 0), P(3, 1), 'חוזר שלישי בבוקר או בצהריים', T),
+    ].filter((a) => a.soldierId);
+  }
+
   function create() {
     const soldiers = NAMES.map((name, i) => ({ id: 's' + (i + 1), name, role: '', notes: '', active: true }));
-    const id = (prefix) => soldiers.find((s) => s.name.startsWith(prefix)).id;
-    const P = (date, part) => ({ date: '2026-10-' + date, part });
-    let n = 0;
-    const A = (who, type, start, end, note, status) => ({
-      id: 'a' + ++n, soldierId: id(who), type, status: status || 'approved', start, end, note: note || '',
-    });
-
-    const absences = [
-      A('נדב', 'exit', P(21, 2), null, 'נמצא עד רביעי ואז יוצא'),
-      A('נדב', 'personal', null, null, 'חינה ומסיבת רווקים', 'pending'),
-
-      A('אריאל', 'late', P(18, 0), P(19, 0), 'מגיע בשני'),
-      A('אריאל', 'exit', P(19, 1), P(20, 0), 'מגיע לכמה שעות ויוצא, חוזר בשלישי'),
-      A('אריאל', 'exit', P(24, 0), null, 'יוצא בשבת'),
-
-      A('ניר', 'late', P(18, 0), P(18, 2), 'מגיע ראשון בערב'),
-
-      A('אורי', 'late', P(18, 0), P(18, 2), 'מגיע ראשון בערב'),
-      A('אורי', 'exit', P(23, 1), null, 'יוצא בשישי'),
-
-      A('תומר', 'exit', P(24, 2), null, 'יוצא במוצאי שבת'),
-
-      A('לאון', 'late', P(18, 0), P(19, 1), 'מגיע שני בבוקר או בצהריים'),
-      A('לאון', 'exit', P(23, 1), null, 'יוצא בשישי'),
-
-      A('עזרא', 'late', P(18, 0), P(18, 1), 'מגיע ראשון באיחור'),
-      A('עזרא', 'exit', P(19, 2), P(20, 2), 'יוצא שני בערב, חוזר שלישי בערב'),
-      A('עזרא', 'exit', P(23, 1), null, 'לא חוזר לסוף השבוע'),
-
-      A('סרגיי', 'exit', P(23, 0), P(23, 1), 'יוצא לכמה שעות וחוזר באותו יום'),
-
-      A('יניב', 'late', P(18, 0), P(18, 2), 'מגיע לקראת ערב'),
-      A('יניב', 'exit', P(24, 0), null, 'יוצא שבת בבוקר'),
-
-      A('בניאל', 'exit', P(20, 1), P(21, 1), 'יוצא שלישי בצהריים, חוזר רביעי בצהריים'),
-    ];
-
     return {
       version: 1,
+      movesVersion: MOVES_VERSION,
       soldiers,
-      absences,
+      absences: moves(soldiers),
       settings: { unitName: 'הצוות שלי', minThreshold: 10, theme: 'auto' },
     };
   }
 
-  root.Seed = { create };
+  root.Seed = { create, moves, MOVES_VERSION };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.Seed;
 })(typeof self !== 'undefined' ? self : globalThis);
