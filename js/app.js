@@ -3,7 +3,7 @@
   'use strict';
   const L = window.Logic;
   const KEY = 'miluim-team-v1';
-  const APP_VERSION = '4';
+  const APP_VERSION = '5';
   const $ = (s, el = document) => el.querySelector(s);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const pad = (n) => String(n).padStart(2, '0');
