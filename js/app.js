@@ -3,7 +3,7 @@
   'use strict';
   const L = window.Logic;
   const KEY = 'miluim-team-v1';
-  const APP_VERSION = '3';
+  const APP_VERSION = '4';
   const $ = (s, el = document) => el.querySelector(s);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const pad = (n) => String(n).padStart(2, '0');
@@ -633,7 +633,7 @@
 
   applyTheme();
   render();
-  if (migrated) setTimeout(() => toast('🔄 התנועות עודכנו לשבוע 1.11'), 400);
+  if (migrated) setTimeout(() => toast(`🔄 התנועות עודכנו: ${Seed.MOVES_LABEL}`), 400);
 
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     // כשגרסה חדשה של האפליקציה נכנסת לתוקף, טוענים מחדש פעם אחת כדי להציג אותה
